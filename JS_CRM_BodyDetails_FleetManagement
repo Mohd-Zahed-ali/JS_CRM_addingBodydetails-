@@ -1,0 +1,185 @@
+var deletecount = 0;
+var FinalData = [];
+var jsinit = new function () {
+
+	//(ChooseProduct)Opportunity Header Fields details..
+	
+	var ModelNoPartNo = 300879;
+	var Tick = 301837;
+
+	// Product Information ..Header Fields..
+	this.PRefNo = 301841;
+	
+	var currRow = 0;
+	var rCount = 0;
+	
+	this.onload = function () {
+		//alert("This is developer Task..");
+		var a = $("<a>");
+		a.attr("href", "javascript:void(0)");
+		a.attr("class", "nPrimaryButton rippleBtn");
+		a.text("Load Product Information");
+		a.attr("align", "left");
+		a.attr("id", "Ext_Button");
+		a.attr("onclick", "jsinit.getSourceTableCount()");
+
+		var targetDiv = $("#dvTermsandConditions");
+		$(targetDiv).before(a);
+	};
+	this.ButtonFunc = function () {
+		//alert("This is external module");
+
+		centra.crmapi.getEditView().getTableRowCount(function (objResponse3) {
+
+			var rowCount = objResponse3.data;
+			var iSelRow = 1;
+			var testiSelRow = 1;
+			var MaxRowIndex = rowCount - 1;
+
+			centra.crmapi.getEditView().deleteBodyRow(function (objResponsecu) {
+				if (rowCount > 1) {
+					jsinit.ButtonFunc();
+				}
+				else {
+					centra.crmapi.getEditView().deleteBodyRow(function (objResponsecu11) {
+						var arrEmpty = [301841, '', 1];
+
+						centra.crmapi.getEditView().setRowWithValues((objjjj) => {
+						//mainLoopIndex+=1;
+							centra.crmapi.getEditView().getTableRowCount(jsinit.getSourceTableCount, 5011);
+					}, '8', 0, arrEmpty);
+                    
+                }, '8', 0);
+            }
+        }, '8', iSelRow);
+
+    }, '8');
+		
+	};
+	this.getSourceTableCount = function (obj) {
+		centra.crmapi.getEditView().getTableRowCount(function (obj1) {
+			var rowCount = parseInt(obj1['data']);
+			//Table row values..
+			var sFields = "300879,301837";
+			var mandatoryFields = "300879,301837";
+			var arrFields = sFields.split(',');
+			var arrMandFields = mandatoryFields.split(',');
+			
+			centra.crmapi.getEditView().getTableRowValues(function (obj2){
+				
+				
+				var mainArr = [];
+				var ArrToBeUnchecked = [];
+
+				var length=obj2.data.length;
+				for (var i = 0; i < length; i++) 
+				{ 
+					var PRefNo = obj2.data[i][0];
+					var bIsCheked = obj2.data[i][1];
+					
+					if (bIsCheked) {
+						ArrToBeUnchecked.push(i);
+							arValues=[];
+							arValues = [[301841, PRefNo,0]];//Product Category
+									
+							mainArr.push(arValues);
+					}
+					
+				
+				}
+				if(mainArr.length>0)
+				{
+					postDataToGrid(mainArr, 5012, ArrToBeUnchecked);
+				}
+			}, arrFields, 0, rowCount - 1, arrMandFields, 1);
+		}, 5011);
+	};
+	
+	function postDataToGrid(mainArr, tabId, ArrToBeUnchecked)
+    {
+
+        //delRows(312);
+
+        if(mainArr.length>0){
+
+            centra.crmapi.getEditView().getTableRowCount((objj) => 
+            {
+            
+             var iNoOfRowsPresent = objj['data'];  //Min 4
+             //console.log(iNoOfRowsPresent);
+
+				// Destination table row values / Original length..
+
+				var sFields = "301841";
+				var mandatoryFields = "301841";
+				var arrFields = sFields.split(',');
+				//var tabId=5012;
+				var arrMandFields = mandatoryFields.split(',');
+				//emptyArValues=[];
+				emptyArValues = [301841, "",0];//actual Description working 
+									
+				
+				
+				centra.crmapi.getEditView().getTableRowValues(function (obj) {
+
+					var OriginalRowsInTable = obj.data.length;  //0
+
+					// Setting/Adding rows in table..
+					if (OriginalRowsInTable == 0) {
+						for (var i = 0; i < mainArr.length; i++) {
+							if (i < iNoOfRowsPresent) {
+								centra.crmapi.getEditView().setRowWithValues((objjjj) => {
+									//mainLoopIndex+=1;
+								}, tabId, i, mainArr[i]);
+							}
+							else if (i >= iNoOfRowsPresent) {
+								centra.crmapi.getEditView().addRowWithValues((objjjj) => {
+									//mainLoopIndex+=1;
+								}, tabId, mainArr[i]);
+							}
+
+							else if (iNoOfRowsPresent - mainArr.length > 0) {
+								centra.crmapi.getEditView().setRowWithValues((obj1) => {
+								}, tabId, i, emptyArValues);
+							}
+						}
+						for (let ii = mainArr.length; ii < iNoOfRowsPresent; ii++) {
+							centra.crmapi.getEditView().setRowWithValues(function (obj) { }, tabId, ii, emptyArValues);
+						}
+					}
+					else {
+
+						for (var i = 0; i < mainArr.length; i++) {
+
+							if (iNoOfRowsPresent > i + OriginalRowsInTable) {
+								centra.crmapi.getEditView().setRowWithValues((objjjj) => {
+									//mainLoopIndex+=1;
+								}, tabId, i + OriginalRowsInTable, mainArr[i]);
+							}
+							else {
+								centra.crmapi.getEditView().addRowWithValues((objjjj) => {
+									//mainLoopIndex+=1;
+								}, tabId, mainArr[i]);
+                            }
+							
+						}
+
+                    }	
+
+				}, arrFields, 0, iNoOfRowsPresent - 1, arrMandFields, 1);
+
+            }, tabId);
+			SetTicks(ArrToBeUnchecked);
+        }
+	};
+
+	function SetTicks(ArrToBeUnchecked) {
+		//alert('Hi');
+		for (var sm = 0; sm < ArrToBeUnchecked.length; sm++) {
+			centra.crmapi.getEditView().setBodyFieldValue(objj1 => {
+				
+			}, 301837, ArrToBeUnchecked[sm],0,1)
+        }
+	};
+	
+};
