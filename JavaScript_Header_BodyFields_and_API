@@ -1,0 +1,291 @@
+var deletecount = 0;
+var FinalData = [];
+
+var NEW_SERICE_CON = {
+		FIELDS:{
+			HEADER:{
+				startdate:302170,
+				enddate:302171
+				
+			},
+			BDY_LOCATION:{
+				parentAsset:302060,
+				frequency:302241,
+				tblid:206
+			},
+			BDY_ASSETS:{
+				asset:302091,
+				areaPA:302172,
+				checklist:302212,
+				tblid:209
+			},
+			BDY_SERVICES:{
+				parentAsset:302095,
+				prodcut:302096,
+				prefDate:302097,
+				tblid:211
+			}
+		},
+		COMBO:{
+			val:1,
+			id:0
+		},
+		API:{
+			clientid:'wMs9XTXn1XXB3lIOnmkP99qXQmHrkOSTAbZypIBTMSI=!n',
+			clientkey:'fpKtoVrN0VVEfyPtUt7W*wlIEts*bjwxS^mno9URuCI=!n'
+		}
+	};
+	
+var jsinit = new function () {
+
+
+	var currRow = 0;
+	var rCount = 0;
+	var grid2Arr=[];
+	
+	
+	this.onload = function () {
+		//alert("This is developer Task..");
+		var a = $("<a>");
+		a.attr("href", "javascript:void(0)");
+		a.attr("class", "nPrimaryButton rippleBtn");
+		a.text("Load Child Assets");
+		a.attr("align", "left");
+		a.attr("id", "Ext_Button2");
+		a.attr("onclick", "jsinit.loadChildaAssets()");
+		var targetDiv = $("#dvAssets");
+		$(targetDiv).before(a);
+		
+		
+		var b = $("<a>");
+		b.attr("href", "javascript:void(0)");
+		b.attr("class", "nPrimaryButton rippleBtn");
+		b.text("Load Services");
+		b.attr("align", "left");
+		b.attr("id", "Ext_Button2");
+		b.attr("onclick", "jsinit.loadServices()");
+		var targetDiv1 = $("#dvServices");
+		$(targetDiv1).before(b);
+	};
+	this.loadChildaAssets =function(){
+		alert("Button 1 Clicked")
+		jsinit.readLocationGridData();
+	};
+	this.loadServices =function(){
+		alert("Button 2 Clicked")
+		jsinit.readAssetGridData();
+	};
+	
+	this.readLocationGridData=function(){
+		centra.crmapi.getEditView().getTableRowCount((resObj) => {
+			var location_grid_rows = resObj['data'];
+			var arrLocFieds = [NEW_SERICE_CON.FIELDS.BDY_LOCATION.parentAsset,NEW_SERICE_CON.FIELDS.BDY_LOCATION.frequency];
+			centra.crmapi.getEditView().getTableRowValues((obj)=>{
+				console.log(obj);
+				var arrParentAsset = [];
+				var arrUniqueParentAsset = [];
+				var arrFrequency = [];
+				var sParentAsset = obj['data'].map(item=>{
+					arrParentAsset.push(item[0]);
+					arrFrequency.push(item[1]);
+				});
+				var arrUniqueParentAsset = arrParentAsset.filter((c, index) => {
+					return arrParentAsset.indexOf(c) === index;
+				});
+				var sParentAssetNums = arrUniqueParentAsset.join(',');
+				var sQuery = `select iTransId [iParentAssetId],ChildAssets [iChildAssetId] from tuCrm_CustAssets_Body_Details with(nolock) where iTransId>0 and iTransId in (${sParentAssetNums}) and ISNULL(ChildAssets,0)>0 order by iTransId ASC,iBodyId ASC`
+				//console.log("QUERY",sQuery);
+				
+				  centra.crmapi.getView().getAccessToken(objAccessToken => {
+						var access_token = objAccessToken.data;
+						var sUrl = "http://localhost:8080/crmservices/rest/utils/V1.0/getQueryBasedMetaData?query="+encodeURI(sQuery);
+						console.log(sUrl);
+						as_utils.sendGetRequest(sUrl,access_token, obj => {
+							console.log("ResponseText: ",obj.target.responseText);
+							console.log("obj: ",obj);
+							var json = JSON.parse(obj.target.responseText);
+							console.log("Json: ",json);
+							
+							var objRecords = json['records'];
+							var arrFinal=[];
+							for(var i=0;i<objRecords.length;i++){
+								var arrLine = [[NEW_SERICE_CON.FIELDS.BDY_ASSETS.asset,objRecords[i]['iChildAssetId'],NEW_SERICE_CON.COMBO.id],[NEW_SERICE_CON.FIELDS.BDY_ASSETS.areaPA,objRecords[i]['iParentAssetId'],NEW_SERICE_CON.COMBO.id]];
+								arrFinal.push(arrLine);
+							}
+							
+							as_utils.deleteAllAndFillGrid2(arrFinal,NEW_SERICE_CON.FIELDS.BDY_ASSETS.tblid,0,obj=>{
+								console.log(obj);
+							})
+						
+						})
+				 }, NEW_SERICE_CON.API.clientid,NEW_SERICE_CON.API.clientkey, 1);
+				
+			},arrLocFieds,0,location_grid_rows-1,[],NEW_SERICE_CON.COMBO.id);
+		},NEW_SERICE_CON.FIELDS.BDY_LOCATION.tblid);
+	}
+	
+	this.readAssetGridData=function(){
+		centra.crmapi.getEditView().getFieldValue((fobj)=>{
+			var HearFieldsArray = [NEW_SERICE_CON.FIELDS.HEADER.startdate,NEW_SERICE_CON.FIELDS.HEADER.enddate];
+			console.log(fobj);
+			var Fromdate='';
+			var todate='';
+			
+			var DateData=fobj['data'];
+				Fromdate=DateData[0];
+				todate=DateData[1];
+				Fromdate=Fromdate.split("/").reverse().join("-");
+				todate=todate.split("/").reverse().join("-");
+				
+				console.log(Fromdate);
+				console.log(todate);
+				
+		centra.crmapi.getEditView().getTableRowCount((resObj) => {
+			var location_grid_rows = resObj['data'];
+			var arrLocFieds = [NEW_SERICE_CON.FIELDS.BDY_LOCATION.parentAsset,NEW_SERICE_CON.FIELDS.BDY_LOCATION.frequency];
+			centra.crmapi.getEditView().getTableRowValues((obj)=>{
+				console.log(obj);
+				var arrParentAsset = [];
+				var arrFrequency = [];
+				var sParentAsset = obj['data'].map(item=>{
+					arrParentAsset.push(item[0]);
+					arrFrequency.push(item[1]);
+				});
+				console.log(arrParentAsset);
+				console.log(arrFrequency);
+				var eachparrentasst = 0;
+				var eachparrentasst = 0;
+				var eachFrequency=0;
+				
+				centra.crmapi.getView().getAccessToken(objAccessToken => {
+				var access_token = objAccessToken.data;
+					grid2Arr=[];
+					jsinit.getDataFromCRM(obj=>{
+						console.warn(obj);
+						console.warn(grid2Arr);
+						
+						var arrFinal2 = [];
+						
+						for(var i=0;i<grid2Arr.length;i++){
+							var arrSub = grid2Arr[i];
+							for(var j=0;j<arrSub.length;j++){
+								var arrParAss = [NEW_SERICE_CON.FIELDS.BDY_SERVICES.parentAsset,arrSub[j]['ParentAsset'],NEW_SERICE_CON.COMBO.id]
+								var arrPrfDt = [NEW_SERICE_CON.FIELDS.BDY_SERVICES.prefDate,arrSub[j]['STARTDATE'],NEW_SERICE_CON.COMBO.val]
+								arrFinal2.push([arrParAss,arrPrfDt]);
+							}
+						}
+						console.warn(arrFinal2);
+						as_utils.deleteAllAndFillGrid(arrFinal2,NEW_SERICE_CON.FIELDS.BDY_SERVICES.tblid,0,obj=>{
+							
+						});
+						
+						
+					},Fromdate,todate,arrParentAsset,arrFrequency,access_token,0)
+				}, NEW_SERICE_CON.API.clientid,NEW_SERICE_CON.API.clientkey, 1);
+			},arrLocFieds,0,location_grid_rows-1,[],NEW_SERICE_CON.COMBO.id);
+			
+			
+		},NEW_SERICE_CON.FIELDS.BDY_LOCATION.tblid);
+		},[NEW_SERICE_CON.FIELDS.HEADER.startdate,NEW_SERICE_CON.FIELDS.HEADER.enddate],[NEW_SERICE_CON.COMBO.value,NEW_SERICE_CON.COMBO.value]);
+	}
+	
+	this.getDataFromCRM=function(callback,Fromdate,todate,arrParentAsset,arrFrequency,access_token,i){
+		if(i<arrFrequency.length)
+		{
+			eachparrentasst=arrParentAsset[i];
+			eachFrequency=arrFrequency[i];
+			if(eachparrentasst != 0 && eachFrequency!=0)
+			{
+				var sQuery = `exec [udp_assetgrid] ${eachparrentasst},${eachFrequency},'${Fromdate}','${todate}'`;
+				console.log(sQuery);
+				var sUrl = "http://localhost:8080/crmservices/rest/utils/V1.0/getQueryBasedMetaData?query="+encodeURIComponent(sQuery);
+				console.log(sUrl);
+				as_utils.sendGetRequest(sUrl,access_token, obj => {
+					console.log("ResponseText: ",obj.target.responseText);
+					console.log("obj: ",obj);
+					var json = JSON.parse(obj.target.responseText);
+					console.log("Json: ",json);
+					var objRecords = json['records'];
+					grid2Arr.push(objRecords);
+					jsinit.getDataFromCRM(callback,Fromdate,todate,arrParentAsset,arrFrequency,access_token,i+1);
+				})
+			}else{
+				jsinit.getDataFromCRM(callback,Fromdate,todate,arrParentAsset,arrFrequency,access_token,i+1);
+			}
+		}else{
+			callback('DATA GOT...');
+		}
+	}
+		
+};
+
+var as_utils = {
+    getLocationOrigin: () => {
+        return 'http://localhost:8181';
+    },
+    sendGetRequest: (sUrl,access_token, callback) => {
+        try {
+            let oReq = new XMLHttpRequest();
+            oReq.addEventListener("load", callback);
+            oReq.open("GET", sUrl, true);
+			oReq.setRequestHeader('access_token',access_token)
+            oReq.send();
+        } catch (e) {
+            console.warn("Exception in Sending HTTP Request : " + e);
+        }
+    },
+    deleteAllAndFillGrid: function (arrData, tableId, i) {
+        let iCount = arrData.length;
+        if (i < iCount) {
+            var arrFiller = arrData[i];
+            if (i === 0) {
+                centra.crmapi.getEditView().deleteAllBodyRows(obj => {
+                    centra.crmapi.getEditView().setRowWithValues(obj => {
+                        as_utils.deleteAllAndFillGrid(arrData, tableId, i + 1);
+                    }, tableId, i, arrFiller)
+                }, tableId);
+            } else {
+                centra.crmapi.getEditView().addRowWithValues(obj => {
+                    as_utils.deleteAllAndFillGrid(arrData, tableId, i + 1);
+                }, tableId, arrFiller);
+            }
+        } else {
+            console.warn("Grid Filled...");
+            util.toggleLoadStatus(true, "Loading Details..", null);
+        }
+    },
+    deleteAllRows:function (arrData, tableId, i,callback){
+        centra.crmapi.getEditView().deleteAllBodyRows(obj => {
+            callback('AllRowsDeleted');
+        }, tableId);
+    },
+    deleteAllAndFillGrid2:function(arrData,tableId,i,callback){
+        let iCount = arrData.length;
+        if(i<iCount){
+            var arrFiller = arrData[i];
+            if(i===0){
+                centra.crmapi.getEditView().deleteAllBodyRows(obj=>{
+                    centra.crmapi.getEditView().setRowWithValues(obj=>{
+                        as_utils.deleteAllAndFillGrid2(arrData,tableId,i+1,callback);
+                    },tableId,i,arrFiller)
+                },tableId);
+            }else{
+                centra.crmapi.getEditView().addRowWithValues(obj=>{
+                    as_utils.deleteAllAndFillGrid2(arrData,tableId,i+1,callback);
+                },tableId,arrFiller);
+            }
+        }else{
+            console.warn("Grid Filled...");
+            callback('callback..');
+        }
+    },
+    getOrigin:function (){
+        if(location.origin.indexOf('localhost')==-1){
+            return "http://localhost:8181";
+        }else{
+            return location.origin;
+        }
+    }
+
+};
+
